@@ -1,0 +1,85 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Build static site
+      run: |
+        # Create a simple static HTML version for GitHub Pages
+        mkdir -p docs
+        echo "<!DOCTYPE html>
+        <html>
+        <head>
+            <title>MCP Learning Path Generator</title>
+            <meta charset='utf-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1'>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; }
+                .container { max-width: 800px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 40px; }
+                .info { background: #f0f0f0; padding: 20px; border-radius: 5px; }
+                .deploy-links { margin-top: 30px; }
+                .deploy-links a { display: inline-block; margin: 10px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>🤖 MCP Learning Path Generator</h1>
+                    <p>Model Context Protocol - Learning Path Generator</p>
+                </div>
+                
+                <div class='info'>
+                    <h2>About This Project</h2>
+                    <p>This is a Streamlit application that generates personalized learning paths using AI and various integrations (YouTube, Google Drive, Notion).</p>
+                    
+                    <h3>Features:</h3>
+                    <ul>
+                        <li>AI-powered learning path generation</li>
+                        <li>YouTube content integration</li>
+                        <li>Google Drive integration</li>
+                        <li>Notion integration</li>
+                        <li>Personalized learning goals</li>
+                    </ul>
+                </div>
+                
+                <div class='deploy-links'>
+                    <h3>Live Deployments:</h3>
+                    <a href='https://your-app.vercel.app' target='_blank'>🚀 Vercel Deployment</a>
+                    <a href='https://your-app.netlify.app' target='_blank'>🌐 Netlify Deployment</a>
+                    <a href='https://your-username.github.io/your-repo-name' target='_blank'>📚 GitHub Pages</a>
+                </div>
+                
+                <div style='margin-top: 40px; text-align: center; color: #666;'>
+                    <p>This is a static version. For the full interactive app, please visit one of the deployment links above.</p>
+                </div>
+            </div>
+        </body>
+        </html>" > docs/index.html
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
