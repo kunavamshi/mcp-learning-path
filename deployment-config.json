@@ -1,0 +1,36 @@
+{
+  "app_name": "mcp-learning-path-generator",
+  "description": "AI-Powered Learning Path Generator using MCP",
+  "version": "1.0.0",
+  "platforms": {
+    "vercel": {
+      "build_command": "pip install -r requirements.txt",
+      "output_directory": ".",
+      "install_command": "pip install -r requirements.txt",
+      "start_command": "streamlit run app.py --server.port $PORT --server.address 0.0.0.0"
+    },
+    "heroku": {
+      "buildpacks": ["heroku/python"],
+      "start_command": "streamlit run app.py --server.port $PORT --server.address 0.0.0.0"
+    },
+    "railway": {
+      "start_command": "streamlit run app.py --server.port $PORT --server.address 0.0.0.0"
+    },
+    "render": {
+      "build_command": "pip install -r requirements.txt",
+      "start_command": "streamlit run app.py --server.port $PORT --server.address 0.0.0.0"
+    },
+    "fly": {
+      "start_command": "streamlit run app.py --server.port $PORT --server.address 0.0.0.0"
+    }
+  },
+  "environment_variables": {
+    "STREAMLIT_SERVER_PORT": "$PORT",
+    "STREAMLIT_SERVER_ADDRESS": "0.0.0.0",
+    "STREAMLIT_SERVER_HEADLESS": "true"
+  },
+  "dependencies": {
+    "python": "3.9+",
+    "packages": ["streamlit>=1.28.0"]
+  }
+}

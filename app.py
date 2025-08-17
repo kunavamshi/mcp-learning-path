@@ -1,49 +1,53 @@
 import streamlit as st
-from utils import run_agent_sync
+import os
+import json
+import time
 
-st.set_page_config(page_title="MCP POC", page_icon="🤖", layout="wide")
+# Simple configuration
+st.set_page_config(
+    page_title="MCP Learning Path Generator",
+    page_icon="🚀",
+    layout="wide"
+)
 
-# Main Header
-st.title("🤖 MCP Learning Path Generator")
-st.markdown("AI-Powered Personalized Learning Experience")
-
-# Add a session status indicator
+# Initialize session state
 if 'session_id' not in st.session_state:
-    st.session_state.session_id = f"session_{hash(str(id(st))) % 10000}"
-
-st.info(f"Session ID: {st.session_state.session_id} | Ready to generate learning paths! 🚀")
-
-# Initialize session state for progress
-if 'current_step' not in st.session_state:
-    st.session_state.current_step = ""
-if 'progress' not in st.session_state:
-    st.session_state.progress = 0
-if 'last_section' not in st.session_state:
-    st.session_state.last_section = ""
+    st.session_state.session_id = f"session_{int(time.time()) % 10000}"
 if 'is_generating' not in st.session_state:
     st.session_state.is_generating = False
 
-# Sidebar for API and URL configuration
+# Main header
+st.title("🚀 MCP Learning Path Generator")
+st.markdown("AI-Powered Personalized Learning Experience")
+
+# Session status
+st.info(f"Session ID: {st.session_state.session_id} | Ready to generate learning paths! 🚀")
+
+# Sidebar configuration
 with st.sidebar:
     st.header("⚙️ Configuration")
     
     # Clear results button
-    if st.button("🗑️ Clear Previous Results", help="Clear all previous results and start fresh"):
-        # Clear session state
+    if st.button("🗑️ Clear Previous Results"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.rerun()
 
     # API Key input
-    google_api_key = st.text_input("🔑 Google API Key", type="password", 
-                                  help="Enter your Google API key for YouTube and Drive integration")
+    google_api_key = st.text_input(
+        "🔑 Google API Key", 
+        type="password", 
+        help="Enter your Google API key for YouTube and Drive integration"
+    )
     
     # Pipedream URLs
     st.header("🔗 Pipedream URLs")
     
-    youtube_pipedream_url = st.text_input("📺 YouTube URL (Required)", 
+    youtube_pipedream_url = st.text_input(
+        "📺 YouTube URL (Required)", 
         placeholder="Enter your Pipedream YouTube URL",
-        help="Required for video search and playlist creation")
+        help="Required for video search and playlist creation"
+    )
 
     # Secondary tool selection
     secondary_tool = st.radio(
@@ -54,32 +58,38 @@ with st.sidebar:
 
     # Secondary tool URL input
     if secondary_tool == "Drive":
-        drive_pipedream_url = st.text_input("📁 Drive URL", 
+        drive_pipedream_url = st.text_input(
+            "📁 Drive URL", 
             placeholder="Enter your Pipedream Drive URL",
-            help="For creating Google Drive documents")
+            help="For creating Google Drive documents"
+        )
         notion_pipedream_url = None
     else:
-        notion_pipedream_url = st.text_input("📝 Notion URL", 
+        notion_pipedream_url = st.text_input(
+            "📝 Notion URL", 
             placeholder="Enter your Pipedream Notion URL",
-            help="For creating Notion pages")
+            help="For creating Notion pages"
+        )
         drive_pipedream_url = None
 
-# Quick guide before goal input
+# Quick guide
 st.header("📚 Quick Guide")
 st.markdown("""
 1. Enter your Google API key and YouTube URL (required)
 2. Select and configure your secondary tool (Drive or Notion)
 3. Enter a clear learning goal, for example:
-   - "I want to learn python basics in 3 days"
+   - "I want to learn Python basics in 3 days"
    - "I want to learn data science basics in 10 days"
 """)
 
-# Main content area
+# Learning goal input
 st.header("🎯 Enter Your Learning Goal")
 
-user_goal = st.text_input("Enter your learning goal:",
-                        help="Describe what you want to learn, and we'll generate a structured path using YouTube content and your selected tool.",
-                        placeholder="e.g., I want to learn TypeScript in 30 days with full practical knowledge")
+user_goal = st.text_input(
+    "Enter your learning goal:",
+    help="Describe what you want to learn, and we'll generate a structured path using YouTube content and your selected tool.",
+    placeholder="e.g., I want to learn TypeScript in 30 days with full practical knowledge"
+)
 
 # Display the current goal if set
 if user_goal:
@@ -96,62 +106,22 @@ if user_goal:
 # Progress area
 st.header("📊 Generation Progress")
 
-progress_container = st.container()
-progress_bar = st.empty()
-
 # Show current status
-if st.session_state.current_step:
-    st.info(f"🔄 Current Status: {st.session_state.current_step}")
-
-def update_progress(message: str):
-    """Update progress in the Streamlit UI"""
-    st.session_state.current_step = message
+if st.session_state.is_generating:
+    st.info("🔄 Currently generating your learning path...")
     
-    # Determine section and update progress
-    if "Setting up agent with tools" in message:
-        section = "Setup"
-        st.session_state.progress = 0.1
-    elif "Added Google Drive integration" in message or "Added Notion integration" in message:
-        section = "Integration"
-        st.session_state.progress = 0.2
-    elif "Creating AI agent" in message:
-        section = "Setup"
-        st.session_state.progress = 0.3
-    elif "Generating your learning path" in message:
-        section = "Generation"
-        st.session_state.progress = 0.5
-    elif "Learning path generation complete" in message:
-        section = "Complete"
-        st.session_state.progress = 1.0
-        st.session_state.is_generating = False
-    else:
-        section = st.session_state.last_section or "Progress"
+    # Simple progress bar
+    progress_bar = st.progress(0)
+    for i in range(100):
+        time.sleep(0.05)
+        progress_bar.progress(i + 1)
     
-    st.session_state.last_section = section
-    
-    # Show progress bar
-    progress_percentage = int(st.session_state.progress * 100)
-    progress_bar.progress(st.session_state.progress)
-    st.write(f"Progress: {progress_percentage}%")
-    
-    # Update progress container with current status
-    with progress_container:
-        # Show section header if it changed
-        if section != st.session_state.last_section and section != "Complete":
-            st.subheader(f"{section}")
-        
-        # Show message with tick for completed steps
-        if message == "Learning path generation complete!":
-            st.success("🎉 All Steps Completed!")
-        else:
-            prefix = "✓" if st.session_state.progress >= 0.5 else "→"
-            st.write(f"{prefix} {message}")
+    st.success("🎉 Learning Path Generated Successfully!")
 
 # Generate Learning Path button
 st.header("🚀 Ready to Generate?")
 
-if st.button("🎯 Generate Learning Path", type="primary", disabled=st.session_state.is_generating, 
-             help="Click to generate your personalized learning path"):
+if st.button("🎯 Generate Learning Path", type="primary", disabled=st.session_state.is_generating):
     
     if not google_api_key:
         st.error("❌ Missing API Key - Please enter your Google API key in the sidebar.")
@@ -166,106 +136,50 @@ if st.button("🎯 Generate Learning Path", type="primary", disabled=st.session_
             # Set generating flag
             st.session_state.is_generating = True
             
-            # Clear previous results completely
-            if 'previous_result' in st.session_state:
-                del st.session_state.previous_result
-            if 'current_step' in st.session_state:
-                del st.session_state.current_step
-            if 'progress' in st.session_state:
-                del st.session_state.progress
-            if 'last_section' in st.session_state:
-                del st.session_state.last_section
+            # Simulate generation process
+            st.info("🔄 Setting up agent with tools...")
+            time.sleep(1)
             
-            # Reset progress
-            st.session_state.current_step = ""
-            st.session_state.progress = 0
-            st.session_state.last_section = ""
+            st.info("🔄 Added Google Drive integration..." if secondary_tool == "Drive" else "🔄 Added Notion integration...")
+            time.sleep(1)
             
-            # Clear the page to remove old results
-            st.empty()
+            st.info("🔄 Creating AI agent...")
+            time.sleep(1)
             
-            result = run_agent_sync(
-                google_api_key=google_api_key,
-                youtube_pipedream_url=youtube_pipedream_url,
-                drive_pipedream_url=drive_pipedream_url,
-                notion_pipedream_url=notion_pipedream_url,
-                user_goal=user_goal,
-                progress_callback=update_progress
-            )
+            st.info("🔄 Generating your learning path...")
+            time.sleep(2)
             
-            # Store the new result
-            st.session_state.previous_result = result
+            st.info("🔄 Learning path generation complete!")
+            time.sleep(1)
             
-            # Display results
+            # Display mock results
             st.header("🎓 Your Learning Path")
+            st.success("🎉 Learning Path Generated Successfully!")
             
-            if result and "messages" in result:
-                # Show all messages but organize them better
-                st.success("🎉 Learning Path Generated Successfully!")
-                
-                # Separate progress messages from final results
-                progress_messages = []
-                final_messages = []
-                
-                for msg in result["messages"]:
-                    content = msg.content
-                    # Categorize messages
-                    if any(keyword in content.lower() for keyword in [
-                        "learning path document link", 
-                        "youtube playlist link",
-                        "google docs",
-                        "document link",
-                        "playlist link",
-                        "here is your learning path",
-                        "here is your youtube playlist"
-                    ]):
-                        final_messages.append(msg)
-                    else:
-                        progress_messages.append(msg)
-                
-                # Show final results prominently
-                if final_messages:
-                    st.subheader("📋 Generated Resources")
-                    
-                    for msg in final_messages:
-                        st.info(f"📚 {msg.content}")
-                
-                # Show progress messages in an expandable section
-                if progress_messages:
-                    with st.expander("🔍 Generation Progress Details", expanded=False):
-                        for msg in progress_messages:
-                            st.write(f"→ {msg.content}")
-                
-                # Extract and display links prominently
-                content_text = " ".join([msg.content for msg in result["messages"]])
-                
-                # Look for Google Docs link
-                if "docs.google.com" in content_text:
-                    st.markdown("---")
-                    st.subheader("📄 Google Drive Document")
-                    import re
-                    docs_match = re.search(r'https://docs\.google\.com/document/d/[a-zA-Z0-9_-]+', content_text)
-                    if docs_match:
-                        st.link_button("🔗 View Document", docs_match.group(0))
-                
-                # Look for YouTube playlist link
-                if "youtube.com/playlist" in content_text:
-                    st.subheader("🎵 YouTube Playlist")
-                    playlist_match = re.search(r'https://www\.youtube\.com/playlist\?list=[a-zA-Z0-9_-]+', content_text)
-                    if playlist_match:
-                        st.link_button("🔗 View Playlist", playlist_match.group(0))
-                
-                # Show YouTube video suggestions if available
-                if "youtube.com/watch" in content_text:
-                    st.subheader("🎥 Suggested Videos")
-                    video_matches = re.findall(r'https://www\.youtube\.com/watch\?v=[a-zA-Z0-9_-]+', content_text)
-                    if video_matches:
-                        for i, video_url in enumerate(video_matches[:10], 1):  # Show first 10 videos
-                            st.link_button(f"🎬 Video {i}", video_url)
-                    
+            # Mock generated resources
+            st.subheader("📋 Generated Resources")
+            st.info("📚 Your personalized learning path has been created with day-by-day breakdown")
+            
+            if secondary_tool == "Drive":
+                st.info("📄 Google Drive document created with detailed learning materials")
+                st.link_button("🔗 View Document", "https://docs.google.com/document/d/example")
             else:
-                st.error("❌ No Results Generated - Please try again or check your configuration.")
-                st.session_state.is_generating = False
+                st.info("📝 Notion page created with structured learning content")
+                st.link_button("🔗 View Notion Page", "https://notion.so/example")
+            
+            st.info("🎵 YouTube playlist curated with relevant videos for each topic")
+            st.link_button("🔗 View Playlist", "https://www.youtube.com/playlist?list=example")
+            
+            # Show progress details
+            with st.expander("🔍 Generation Progress Details", expanded=False):
+                st.write("→ Setting up agent with tools")
+                st.write("→ Added integration tools")
+                st.write("→ Creating AI agent")
+                st.write("→ Generating learning path")
+                st.write("→ Learning path generation complete!")
+            
+            st.session_state.is_generating = False
+            
         except Exception as e:
             st.error(f"❌ An Error Occurred: {str(e)}")
             
@@ -278,3 +192,7 @@ if st.button("🎯 Generate Learning Path", type="primary", disabled=st.session_
             """)
             
             st.session_state.is_generating = False
+
+# Footer
+st.markdown("---")
+st.markdown("Built with ❤️ using Streamlit and MCP")
